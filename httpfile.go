@@ -28,6 +28,7 @@ type UploadOptions struct {
 	// file by default
 	FileField  string
 	ExtraField map[string]string
+	Stream     bool
 }
 
 // UploadResponse ...
@@ -55,7 +56,7 @@ func NewFileItems(filePath string, contentType ...string) []FileItem {
 	return []FileItem{FileItem{FilePath: filePath, ContentType: ct}}
 }
 
-// Upload ...
+// Upload single or multi file to file server by formdata
 func Upload(opts UploadOptions) (*UploadResponse, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -125,4 +126,40 @@ func createFormFile(w *multipart.Writer, fieldname, filename string, contentType
 }
 func escapeQuotes(s string) string {
 	return quoteEscaper.Replace(s)
+}
+
+// UploadFile ...
+func UploadFile(filePath string, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return UploadReader(file, targetURL, Header...)
+}
+
+// UploadReader ...
+func UploadReader(body io.Reader, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+	request, err := http.NewRequest(http.MethodPost, targetURL, body)
+	request.Header.Set("Content-Type", "binary/octet-stream")
+	if len(Header) > 0 {
+		for k, v := range Header[0] {
+			request.Header.Set(k, v)
+		}
+	}
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	res := &UploadResponse{
+		Result:     respBody,
+		Header:     resp.Header,
+		StatusCode: resp.StatusCode,
+	}
+	return res, nil
 }

@@ -45,13 +45,21 @@ func TestMultiFileAndExtraField(t *testing.T) {
 	assert.Equal(200, res.StatusCode)
 	assert.Equal("123", res.Header.Get("ExtraField"))
 }
+func TestUploadStream(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	res, err := UploadFile(uploadDir("test.gif"), uploadURL(), map[string]string{"testheader": "123"})
+	require.Nil(err)
+	assert.Equal(200, res.StatusCode)
+	assert.Equal("123", res.Header.Get("testheader"))
+}
 
 func downloadDir(fileName string) string {
-	return "testData/download/" + fileName
+	return "testdata/download/" + fileName
 }
 
 func uploadDir(fileName string) string {
-	return "testData/" + fileName
+	return "testdata/" + fileName
 }
 
 func uploadURL() string {
