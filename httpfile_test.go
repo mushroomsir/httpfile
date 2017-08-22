@@ -12,10 +12,15 @@ func TestSimpleUpload(t *testing.T) {
 	require := require.New(t)
 	res, err := Upload(UploadOptions{
 		FileItems: NewFileItems(uploadDir("test.gif"), ""),
-		TargetURL: uploadURL(),
+		TargetURL: fileURL(),
 	})
 	require.Nil(err)
 	assert.Equal(200, res.StatusCode)
+
+	resp, err := Download(fileURL(), downloadDir("test.gif"), map[string]string{"filename": "test.gif"})
+	require.Nil(err)
+	assert.Equal(200, resp.StatusCode)
+	assert.Equal("bytes", resp.Header.Get("Accept-Ranges"))
 }
 
 func TestHeader(t *testing.T) {
@@ -23,7 +28,7 @@ func TestHeader(t *testing.T) {
 	require := require.New(t)
 	res, err := Upload(UploadOptions{
 		FileItems: []FileItem{NewFileItem(uploadDir("test.gif"), "")},
-		TargetURL: uploadURL(),
+		TargetURL: fileURL(),
 		Header:    map[string]string{"testheader": "123"},
 	})
 	require.Nil(err)
@@ -38,7 +43,7 @@ func TestMultiFileAndExtraField(t *testing.T) {
 			NewFileItem(uploadDir("test.gif")),
 			NewFileItem(uploadDir("test.bmp")),
 		},
-		TargetURL:  uploadURL(),
+		TargetURL:  fileURL(),
 		ExtraField: map[string]string{"ExtraField": "123"},
 	})
 	require.Nil(err)
@@ -48,7 +53,7 @@ func TestMultiFileAndExtraField(t *testing.T) {
 func TestUploadStream(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	res, err := UploadFile(uploadDir("test.gif"), uploadURL(), map[string]string{"testheader": "123"})
+	res, err := UploadFile(uploadDir("test.gif"), fileURL(), map[string]string{"testheader": "123"})
 	require.Nil(err)
 	assert.Equal(200, res.StatusCode)
 	assert.Equal("123", res.Header.Get("testheader"))
@@ -62,6 +67,6 @@ func uploadDir(fileName string) string {
 	return "testdata/" + fileName
 }
 
-func uploadURL() string {
-	return testServer.URL + "/upload"
+func fileURL() string {
+	return testServer.URL + "/file"
 }

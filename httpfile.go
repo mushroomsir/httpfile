@@ -101,15 +101,12 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 	}
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	res := &UploadResponse{
 		Result:     respBody,
 		Header:     resp.Header,
 		StatusCode: resp.StatusCode,
 	}
-	return res, nil
+	return res, err
 }
 
 var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
@@ -153,13 +150,44 @@ func UploadReader(body io.Reader, targetURL string, Header ...map[string]string)
 	}
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	res := &UploadResponse{
 		Result:     respBody,
 		Header:     resp.Header,
 		StatusCode: resp.StatusCode,
 	}
-	return res, nil
+	return res, err
+}
+
+// DownloadResponse ...
+type DownloadResponse struct {
+	FileSize   int64
+	Header     http.Header
+	StatusCode int
+}
+
+// Download ...
+func Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
+	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
+	if len(Header) > 0 {
+		for k, v := range Header[0] {
+			request.Header.Set(k, v)
+		}
+	}
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	out, err := os.Create(savePath)
+	if err != nil {
+		return nil, err
+	}
+	defer out.Close()
+	defer resp.Body.Close()
+	n, err := io.Copy(out, resp.Body)
+	res := &DownloadResponse{
+		FileSize:   n,
+		Header:     resp.Header,
+		StatusCode: resp.StatusCode,
+	}
+	return res, err
 }
