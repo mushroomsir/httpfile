@@ -33,8 +33,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "POST" {
-
-		w.Header().Add("testheader", r.Header.Get("testheader"))
+		w.Header().Set("testheader", r.Header.Get("testheader"))
 		if !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 			handlerStream(w, r)
 			return
@@ -59,6 +58,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == "GET" {
 		filename := r.Header.Get("filename")
+		w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 		f, err := os.Open(FileServer(filename))
 		if err != nil {
 			http.Error(w, err.Error(), 400)

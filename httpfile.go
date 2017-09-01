@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"os"
 	"strings"
 )
+
+var defaultClient = &http.Client{}
+
+// SetHTTPClient ...
+func SetHTTPClient(client *http.Client) {
+	defaultClient = client
+}
 
 // FileItem ...
 type FileItem struct {
@@ -60,6 +68,7 @@ func NewFileItems(filePath string, contentType ...string) []FileItem {
 func Upload(opts UploadOptions) (*UploadResponse, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
+
 	if opts.FileField == "" {
 		opts.FileField = "file"
 	}
@@ -79,6 +88,7 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 			return nil, err
 		}
 		_, err = io.Copy(fileWriter, fh)
+		fh.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +105,7 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 		request.Header.Set(k, v)
 	}
 	request.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := defaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -138,13 +148,16 @@ func UploadFile(filePath string, targetURL string, Header ...map[string]string) 
 // UploadReader ...
 func UploadReader(body io.Reader, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
 	request, err := http.NewRequest(http.MethodPost, targetURL, body)
+	if err != nil {
+		return nil, err
+	}
 	request.Header.Set("Content-Type", "binary/octet-stream")
 	if len(Header) > 0 {
 		for k, v := range Header[0] {
 			request.Header.Set(k, v)
 		}
 	}
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := defaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -168,14 +181,23 @@ type DownloadResponse struct {
 // Download ...
 func Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
 	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	if len(Header) > 0 {
 		for k, v := range Header[0] {
 			request.Header.Set(k, v)
 		}
 	}
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := defaultClient.Do(request)
 	if err != nil {
 		return nil, err
+	}
+	if savePath == "" {
+		_, params, err := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
+		if err == nil {
+			savePath = params["filename"]
+		}
 	}
 	out, err := os.Create(savePath)
 	if err != nil {
@@ -190,4 +212,22 @@ func Download(targetURL string, savePath string, Header ...map[string]string) (*
 		StatusCode: resp.StatusCode,
 	}
 	return res, err
+}
+
+// Head ...
+func Head(targetURL string, Header ...map[string]string) (http.Header, error) {
+	request, err := http.NewRequest(http.MethodHead, targetURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(Header) > 0 {
+		for k, v := range Header[0] {
+			request.Header.Set(k, v)
+		}
+	}
+	resp, err := defaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Header, nil
 }
