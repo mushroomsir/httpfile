@@ -3,70 +3,33 @@ package httpfile
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/textproto"
 	"os"
 	"strings"
 )
 
-var defaultClient = &http.Client{}
+var httpFile = New(nil)
 
-// SetHTTPClient ...
-func SetHTTPClient(client *http.Client) {
-	defaultClient = client
-}
-
-// FileItem ...
-type FileItem struct {
-	FilePath string
-	// application/octet-stream by default
-	ContentType string
-}
-
-// UploadOptions ...
-type UploadOptions struct {
-	FileItems []FileItem
-	TargetURL string
-	Header    map[string]string
-	// file by default
-	FileField  string
-	ExtraField map[string]string
-	Stream     bool
-}
-
-// UploadResponse ...
-type UploadResponse struct {
-	Res        *http.Response
-	Result     []byte
-	Header     http.Header
-	StatusCode int
-}
-
-// NewFileItem ...
-func NewFileItem(filePath string, contentType ...string) FileItem {
-	var ct string
-	if len(contentType) > 0 {
-		ct = contentType[0]
+// New ...
+func New(client *http.Client) *HTTPFile {
+	httpfile := &HTTPFile{client: client}
+	if httpfile.client == nil {
+		httpfile.client = &http.Client{}
 	}
-	return FileItem{FilePath: filePath, ContentType: ct}
+	return httpfile
 }
 
-// NewFileItems ...
-func NewFileItems(filePath string, contentType ...string) []FileItem {
-	var ct string
-	if len(contentType) > 0 {
-		ct = contentType[0]
-	}
-	return []FileItem{FileItem{FilePath: filePath, ContentType: ct}}
+// HTTPFile ...
+type HTTPFile struct {
+	client *http.Client
 }
 
-// Upload single or multi file to file server by formdata
-func Upload(opts UploadOptions) (*UploadResponse, error) {
+// Upload ...
+func (h *HTTPFile) Upload(opts UploadOptions) (*UploadResponse, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
@@ -106,7 +69,7 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 		request.Header.Set(k, v)
 	}
 	request.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-	resp, err := defaultClient.Do(request)
+	resp, err := h.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -121,34 +84,18 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 	return res, err
 }
 
-var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
-
-// CreateFormFile is a convenience wrapper around CreatePart. It creates
-// a new form-data header with the provided field name and file name.
-func createFormFile(w *multipart.Writer, fieldname, filename string, contentType string) (io.Writer, error) {
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition",
-		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
-			escapeQuotes(fieldname), escapeQuotes(filename)))
-	h.Set("Content-Type", contentType)
-	return w.CreatePart(h)
-}
-func escapeQuotes(s string) string {
-	return quoteEscaper.Replace(s)
-}
-
 // UploadFile ...
-func UploadFile(filePath string, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+func (h *HTTPFile) UploadFile(filePath string, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	return UploadReader(file, targetURL, Header...)
+	return h.UploadReader(file, targetURL, Header...)
 }
 
 // UploadReader ...
-func UploadReader(body io.Reader, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+func (h *HTTPFile) UploadReader(body io.Reader, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
 	request, err := http.NewRequest(http.MethodPost, targetURL, body)
 	if err != nil {
 		return nil, err
@@ -159,7 +106,7 @@ func UploadReader(body io.Reader, targetURL string, Header ...map[string]string)
 			request.Header.Set(k, v)
 		}
 	}
-	resp, err := defaultClient.Do(request)
+	resp, err := h.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -174,16 +121,8 @@ func UploadReader(body io.Reader, targetURL string, Header ...map[string]string)
 	return res, err
 }
 
-// DownloadResponse ...
-type DownloadResponse struct {
-	Res        *http.Response
-	FileSize   int64
-	Header     http.Header
-	StatusCode int
-}
-
 // Download will get filename from 'Content-Disposition' if savePath is empty.
-func Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
+func (h *HTTPFile) Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
 	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
 		return nil, err
@@ -193,7 +132,7 @@ func Download(targetURL string, savePath string, Header ...map[string]string) (*
 			request.Header.Set(k, v)
 		}
 	}
-	resp, err := defaultClient.Do(request)
+	resp, err := h.client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +159,7 @@ func Download(targetURL string, savePath string, Header ...map[string]string) (*
 }
 
 // Head ...
-func Head(targetURL string, Header ...map[string]string) (*http.Response, error) {
+func (h *HTTPFile) Head(targetURL string, Header ...map[string]string) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodHead, targetURL, nil)
 	if err != nil {
 		return nil, err
@@ -230,5 +169,82 @@ func Head(targetURL string, Header ...map[string]string) (*http.Response, error)
 			request.Header.Set(k, v)
 		}
 	}
-	return defaultClient.Do(request)
+	return h.client.Do(request)
+}
+
+// NewFileItem ...
+func NewFileItem(filePath string, contentType ...string) FileItem {
+	var ct string
+	if len(contentType) > 0 {
+		ct = contentType[0]
+	}
+	return FileItem{FilePath: filePath, ContentType: ct}
+}
+
+// NewFileItems ...
+func NewFileItems(filePath string, contentType ...string) []FileItem {
+	var ct string
+	if len(contentType) > 0 {
+		ct = contentType[0]
+	}
+	return []FileItem{FileItem{FilePath: filePath, ContentType: ct}}
+}
+
+// FileItem ...
+type FileItem struct {
+	FilePath string
+	// application/octet-stream by default
+	ContentType string
+}
+
+// UploadOptions ...
+type UploadOptions struct {
+	FileItems []FileItem
+	TargetURL string
+	Header    map[string]string
+	// file by default
+	FileField  string
+	ExtraField map[string]string
+	Stream     bool
+}
+
+// UploadResponse ...
+type UploadResponse struct {
+	Res        *http.Response
+	Result     []byte
+	Header     http.Header
+	StatusCode int
+}
+
+// Upload single or multi file to file server by formdata
+func Upload(opts UploadOptions) (*UploadResponse, error) {
+	return httpFile.Upload(opts)
+}
+
+// UploadFile ...
+func UploadFile(filePath string, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+	return httpFile.UploadFile(filePath, targetURL, Header...)
+}
+
+// UploadReader ...
+func UploadReader(body io.Reader, targetURL string, Header ...map[string]string) (*UploadResponse, error) {
+	return httpFile.UploadReader(body, targetURL, Header...)
+}
+
+// DownloadResponse ...
+type DownloadResponse struct {
+	Res        *http.Response
+	FileSize   int64
+	Header     http.Header
+	StatusCode int
+}
+
+// Download will get filename from 'Content-Disposition' if savePath is empty.
+func Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
+	return httpFile.Download(targetURL, savePath, Header...)
+}
+
+// Head ...
+func Head(targetURL string, Header ...map[string]string) (*http.Response, error) {
+	return httpFile.Head(targetURL, Header...)
 }
