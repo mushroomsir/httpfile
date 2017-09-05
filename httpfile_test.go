@@ -21,9 +21,9 @@ func TestHead(t *testing.T) {
 	_, err := Head("")
 	require.NotNil(err)
 
-	head, err := Head("https://http2.golang.org/reqinfo", map[string]string{"filename": "test.gif"})
+	res, err := Head("https://http2.golang.org/reqinfo", map[string]string{"filename": "test.gif"})
 	require.Nil(err)
-	assert.Equal("text/plain", head.Get("Content-Type"))
+	assert.Equal("text/plain", res.Header.Get("Content-Type"))
 }
 func TestError(t *testing.T) {
 	assert := assert.New(t)

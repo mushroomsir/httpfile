@@ -41,6 +41,7 @@ type UploadOptions struct {
 
 // UploadResponse ...
 type UploadResponse struct {
+	Res        *http.Response
 	Result     []byte
 	Header     http.Header
 	StatusCode int
@@ -113,6 +114,7 @@ func Upload(opts UploadOptions) (*UploadResponse, error) {
 	respBody, err := ioutil.ReadAll(resp.Body)
 	res := &UploadResponse{
 		Result:     respBody,
+		Res:        resp,
 		Header:     resp.Header,
 		StatusCode: resp.StatusCode,
 	}
@@ -165,6 +167,7 @@ func UploadReader(body io.Reader, targetURL string, Header ...map[string]string)
 	respBody, err := ioutil.ReadAll(resp.Body)
 	res := &UploadResponse{
 		Result:     respBody,
+		Res:        resp,
 		Header:     resp.Header,
 		StatusCode: resp.StatusCode,
 	}
@@ -173,12 +176,13 @@ func UploadReader(body io.Reader, targetURL string, Header ...map[string]string)
 
 // DownloadResponse ...
 type DownloadResponse struct {
+	Res        *http.Response
 	FileSize   int64
 	Header     http.Header
 	StatusCode int
 }
 
-// Download ...
+// Download will get filename from 'Content-Disposition' if savePath is empty.
 func Download(targetURL string, savePath string, Header ...map[string]string) (*DownloadResponse, error) {
 	request, err := http.NewRequest(http.MethodGet, targetURL, nil)
 	if err != nil {
@@ -208,6 +212,7 @@ func Download(targetURL string, savePath string, Header ...map[string]string) (*
 	n, err := io.Copy(out, resp.Body)
 	res := &DownloadResponse{
 		FileSize:   n,
+		Res:        resp,
 		Header:     resp.Header,
 		StatusCode: resp.StatusCode,
 	}
@@ -215,7 +220,7 @@ func Download(targetURL string, savePath string, Header ...map[string]string) (*
 }
 
 // Head ...
-func Head(targetURL string, Header ...map[string]string) (http.Header, error) {
+func Head(targetURL string, Header ...map[string]string) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodHead, targetURL, nil)
 	if err != nil {
 		return nil, err
@@ -225,9 +230,5 @@ func Head(targetURL string, Header ...map[string]string) (http.Header, error) {
 			request.Header.Set(k, v)
 		}
 	}
-	resp, err := defaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Header, nil
+	return defaultClient.Do(request)
 }
