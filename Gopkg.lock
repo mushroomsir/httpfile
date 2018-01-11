@@ -8,6 +8,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mushroomsir/mimetypes"
+  packages = ["."]
+  revision = "3b41529ef7573216e71b0faae591d306561d26a2"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -25,6 +31,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fa18d891407eb16ae2976d27a27c325449c9b31de032c34557f0bd09e0160ee0"
+  inputs-digest = "9c5600526d303635aaca95d2922a4b7e3f003666738e2ea8fb31e4ee95ca21b8"
   solver-name = "gps-cdcl"
   solver-version = 1

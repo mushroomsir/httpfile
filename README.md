@@ -20,6 +20,8 @@ go get -u github.com/mushroomsir/httpfile
 ## Usage
 ```go
 func TestHTTPFile(t *testing.T) {
+	require := require.New(t)
+	
 	res := httpfile.NewReq(fileURL(), "testdata/test.gif").Upload()
 	require.Nil(res.Error())
 	require.Equal(200, res.StatusCode())
