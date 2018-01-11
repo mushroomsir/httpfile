@@ -6,33 +6,28 @@
 
 ## Features
 
-- Upload multi file by formdata
-- Upload file by stream
-- Custom file `Content-Type` for upload
-- Support add extra field to formdata
-- Download file 
+- Easy to use
+- Upload file by http FormFata
+- Upload file by http Stream
+- Download file to local
 
 ## Installation
 
 ```sh
-go get github.com/mushroomsir/httpfile
+go get -u github.com/mushroomsir/httpfile
 ```
 
 ## Usage
 ```go
-package main
+func TestHTTPFile(t *testing.T) {
+	res := httpfile.NewReq(fileURL(), "testdata/test.gif").Upload()
+	require.Nil(res.Error())
+	require.Equal(200, res.StatusCode())
 
-import "github.com/mushroomsir/httpfile"
-import "fmt"
-
-func main() {
-	res, err := httpfile.Upload(httpfile.UploadOptions{
-		FileItems: httpfile.NewFileItems("test.gif"),
-		TargetURL: "TargetURL",
-	})
-
-	fmt.Println(err)
-	fmt.Println(res)
+	res = httpfile.NewReq(fileURL(), "testdata/download/test1.gif").SetHeader("filename", "test.gif").Download()
+	require.Nil(res.Error())
+	require.Equal(200, res.StatusCode())
+	require.Equal("bytes", res.GetHeader("Accept-Ranges"))
 }
 
 ```

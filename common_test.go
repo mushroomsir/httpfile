@@ -58,6 +58,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == "GET" {
 		filename := r.Header.Get("filename")
+		if filename == "" {
+			filename = r.URL.Query().Get("filename")
+		}
 		w.Header().Set("Content-Disposition", "attachment; filename="+filename)
 		f, err := os.Open(FileServer(filename))
 		if err != nil {

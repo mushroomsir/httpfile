@@ -33,9 +33,6 @@ func (h *HTTPFile) Upload(opts UploadOptions) (*UploadResponse, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
-	if opts.FileField == "" {
-		opts.FileField = "file"
-	}
 	for _, item := range opts.FileItems {
 		flieNames := strings.Split(item.FilePath, "/")
 		fileName := flieNames[len(flieNames)-1]
@@ -43,7 +40,7 @@ func (h *HTTPFile) Upload(opts UploadOptions) (*UploadResponse, error) {
 		if item.ContentType == "" {
 			item.ContentType = "application/octet-stream"
 		}
-		fileWriter, _ = createFormFile(bodyWriter, opts.FileField, fileName, item.ContentType)
+		fileWriter, _ = createFormFile(bodyWriter, fileName, item.ContentType)
 		if fileWriter == nil {
 			return nil, errors.New("error writing to buffer")
 		}
@@ -203,9 +200,7 @@ type UploadOptions struct {
 	TargetURL string
 	Header    map[string]string
 	// file by default
-	FileField  string
 	ExtraField map[string]string
-	Stream     bool
 }
 
 // UploadResponse ...
