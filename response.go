@@ -17,26 +17,35 @@ type Response struct {
 }
 
 func (a *Response) Error() error {
+	if a.err != nil {
+		return a.err
+	}
 	if a.resp != nil && a.resp.StatusCode >= 400 {
-		return errors.New(a.BodyString())
+		res, err := a.BodyString()
+		if err != nil {
+			return err
+		}
+		return errors.New(res)
 	}
 	return a.err
 }
 
 // Body ...
-func (a *Response) Body() []byte {
+func (a *Response) Body() ([]byte, error) {
 	if a.err != nil {
-		return nil
+		return nil, a.err
 	}
 	defer a.resp.Body.Close()
-	respBody, err := ioutil.ReadAll(a.resp.Body)
-	a.err = err
-	return respBody
+	return ioutil.ReadAll(a.resp.Body)
 }
 
 // BodyString ...
-func (a *Response) BodyString() string {
-	return string(a.Body())
+func (a *Response) BodyString() (string, error) {
+	res, err := a.Body()
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
 }
 
 // StatusCode ...
@@ -77,16 +86,15 @@ func (a *Response) ClearError() {
 }
 
 // FileSize ...
-func (a *Response) FileSize() int64 {
-	if a.err == nil {
-		return 0
+func (a *Response) FileSize() (int64, error) {
+	if a.err != nil {
+		return 0, a.err
 	}
 	stat, err := os.Stat(a.filePath)
 	if err != nil {
-		a.err = err
-		return stat.Size()
+		return 0, err
 	}
-	return 0
+	return stat.Size(), nil
 }
 
 // Resp ...

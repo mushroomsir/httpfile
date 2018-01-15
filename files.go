@@ -18,8 +18,8 @@ var (
 	ErrEmptyFilePath  = errors.New("Empty File Path")
 )
 
-// FileUpload ...
-type FileUpload struct {
+// Files ...
+type Files struct {
 	client    *http.Client
 	targetURL string
 	filePath  string
@@ -27,12 +27,12 @@ type FileUpload struct {
 }
 
 // NewReq ...
-func NewReq(targetURL string, filePath ...string) *FileUpload {
+func NewReq(targetURL string, filePath ...string) *Files {
 	fp := ""
 	if len(filePath) > 0 {
 		fp = filePath[0]
 	}
-	hf := &FileUpload{
+	hf := &Files{
 		client:    defaultHTTPClient,
 		targetURL: targetURL,
 		filePath:  fp,
@@ -42,7 +42,7 @@ func NewReq(targetURL string, filePath ...string) *FileUpload {
 }
 
 // SetHTTPClient ...
-func (h *FileUpload) SetHTTPClient(c *http.Client) *FileUpload {
+func (h *Files) SetHTTPClient(c *http.Client) *Files {
 	if c != nil {
 		h.client = c
 	}
@@ -50,12 +50,12 @@ func (h *FileUpload) SetHTTPClient(c *http.Client) *FileUpload {
 }
 
 // SetHeader ...
-func (h *FileUpload) SetHeader(k, v string) *FileUpload {
+func (h *Files) SetHeader(k, v string) *Files {
 	h.header[k] = v
 	return h
 }
 
-func (h *FileUpload) checkUpload() *Response {
+func (h *Files) checkUpload() *Response {
 	res := &Response{}
 	if h.targetURL == "" {
 		res.err = ErrEmptyTargetURL
@@ -70,7 +70,7 @@ func (h *FileUpload) checkUpload() *Response {
 }
 
 // Upload upload file by FormData
-func (h *FileUpload) Upload() *Response {
+func (h *Files) Upload() *Response {
 	res := h.checkUpload()
 	if res.err != nil {
 		return res
@@ -115,7 +115,7 @@ func (h *FileUpload) Upload() *Response {
 }
 
 // UploadByStream upload by stream
-func (h *FileUpload) UploadByStream() *Response {
+func (h *Files) UploadByStream() *Response {
 	res := h.checkUpload()
 	if res.err != nil {
 		return res
@@ -139,8 +139,8 @@ func (h *FileUpload) UploadByStream() *Response {
 	return res
 }
 
-func (h *FileUpload) checkDownload() *Response {
-	res := &Response{}
+func (h *Files) checkDownload() *Response {
+	res := &Response{filePath: h.filePath}
 	if h.targetURL == "" {
 		res.err = ErrEmptyTargetURL
 		return res
@@ -149,7 +149,7 @@ func (h *FileUpload) checkDownload() *Response {
 }
 
 // Download will get filename from 'Content-Disposition' if savePath is empty.
-func (h *FileUpload) Download() *Response {
+func (h *Files) Download() *Response {
 	res := h.checkDownload()
 	if res.err != nil {
 		return res
@@ -173,6 +173,7 @@ func (h *FileUpload) Download() *Response {
 		} else {
 			h.filePath = "unknown"
 		}
+		res.filePath = h.filePath
 	}
 	out, err := os.Create(h.filePath)
 	if err != nil {
@@ -187,7 +188,7 @@ func (h *FileUpload) Download() *Response {
 }
 
 // Head ...
-func (h *FileUpload) Head() *Response {
+func (h *Files) Head() *Response {
 	res := h.checkDownload()
 	if res.err != nil {
 		return res
