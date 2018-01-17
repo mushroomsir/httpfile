@@ -204,3 +204,21 @@ func (h *Files) Head() *Response {
 	res.resp, res.err = h.client.Do(request)
 	return res
 }
+
+// Get will get response from target URL.
+func (h *Files) Get() *Response {
+	res := h.checkDownload()
+	if res.err != nil {
+		return res
+	}
+	request, err := http.NewRequest(http.MethodGet, h.targetURL, nil)
+	if err != nil {
+		res.err = err
+		return res
+	}
+	for k, v := range h.header {
+		request.Header.Set(k, v)
+	}
+	res.resp, res.err = h.client.Do(request)
+	return res
+}
