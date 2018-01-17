@@ -11,11 +11,10 @@ import (
 
 // Response ...
 type Response struct {
-	err        error
-	resp       *http.Response
-	statusCode int
-	filePath   string
-	targetURL  string
+	err       error
+	resp      *http.Response
+	filePath  string
+	targetURL string
 }
 
 func (a *Response) Error() error {
