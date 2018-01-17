@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // Response ...
@@ -103,6 +104,18 @@ func (a *Response) TargetURL() string {
 	return a.targetURL
 }
 
+// ContentLength ...
+func (a *Response) ContentLength() *Int64Result {
+	result := &Int64Result{
+		Err: a.err,
+	}
+	if result.Err != nil {
+		return result
+	}
+	result.Length, result.Err = strconv.ParseInt(a.resp.Header.Get("Content-Length"), 10, 64)
+	return result
+}
+
 // FileName get FileName from filePath or Content-Disposition of response
 func (a *Response) FileName() string {
 	_, file := filepath.Split(a.filePath)
@@ -115,4 +128,10 @@ func (a *Response) Resp() *http.Response {
 		return &http.Response{}
 	}
 	return a.resp
+}
+
+// Int64Result ...
+type Int64Result struct {
+	Length int64
+	Err    error
 }
