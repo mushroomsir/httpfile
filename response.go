@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 // Response ...
@@ -14,6 +15,7 @@ type Response struct {
 	resp       *http.Response
 	statusCode int
 	filePath   string
+	targetURL  string
 }
 
 func (a *Response) Error() error {
@@ -95,6 +97,17 @@ func (a *Response) FileSize() (int64, error) {
 		return 0, err
 	}
 	return stat.Size(), nil
+}
+
+// TargetURL ...
+func (a *Response) TargetURL() string {
+	return a.targetURL
+}
+
+// FileName get FileName from filePath or Content-Disposition of response
+func (a *Response) FileName() string {
+	_, file := filepath.Split(a.filePath)
+	return file
 }
 
 // Resp ...

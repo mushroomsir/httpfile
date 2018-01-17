@@ -65,6 +65,7 @@ func (h *Files) checkUpload() *Response {
 		res.err = ErrEmptyFilePath
 		return res
 	}
+	res.targetURL = h.targetURL
 	res.filePath = h.filePath
 	return res
 }
@@ -145,6 +146,7 @@ func (h *Files) checkDownload() *Response {
 		res.err = ErrEmptyTargetURL
 		return res
 	}
+	res.targetURL = h.targetURL
 	return res
 }
 
@@ -220,5 +222,9 @@ func (h *Files) Get() *Response {
 		request.Header.Set(k, v)
 	}
 	res.resp, res.err = h.client.Do(request)
+	_, params, err := mime.ParseMediaType(res.resp.Header.Get("Content-Disposition"))
+	if err == nil {
+		res.filePath = params["filename"]
+	}
 	return res
 }
