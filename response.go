@@ -3,6 +3,7 @@ package httpfile
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -32,8 +33,8 @@ func (a *Response) Error() error {
 	return a.err
 }
 
-// Body ...
-func (a *Response) Body() ([]byte, error) {
+// Bytes ...
+func (a *Response) Bytes() ([]byte, error) {
 	if a.err != nil {
 		return nil, a.err
 	}
@@ -43,7 +44,7 @@ func (a *Response) Body() ([]byte, error) {
 
 // BodyString ...
 func (a *Response) BodyString() (string, error) {
-	res, err := a.Body()
+	res, err := a.Bytes()
 	if err != nil {
 		return "", err
 	}
@@ -75,8 +76,8 @@ func (a *Response) GetHeader(k string) string {
 	return a.resp.Header.Get(k)
 }
 
-// Discard ...
-func (a *Response) Discard() {
+// Close ...
+func (a *Response) Close() {
 	if a.resp != nil {
 		a.resp.Body.Close()
 	}
@@ -124,10 +125,12 @@ func (a *Response) FileName() string {
 
 // Resp ...
 func (a *Response) Resp() *http.Response {
-	if a.resp == nil {
-		return &http.Response{}
-	}
 	return a.resp
+}
+
+// Body ...
+func (a *Response) Body() io.ReadCloser {
+	return a.resp.Body
 }
 
 // Int64Result ...
