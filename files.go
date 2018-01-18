@@ -55,6 +55,12 @@ func (h *Files) SetHeader(k, v string) *Files {
 	return h
 }
 
+// SetAuthorization ...
+func (h *Files) SetAuthorization(v string) *Files {
+	h.header["Authorization"] = v
+	return h
+}
+
 func (h *Files) checkUpload() *Response {
 	res := &Response{}
 	if h.targetURL == "" {
